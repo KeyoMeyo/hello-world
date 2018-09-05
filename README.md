@@ -1,11 +1,9 @@
 # hello-world
-An 'initial' repository
 
-Hey! My name is KeyoMeyo and I'm a Math major at UAlberta, and this is a repository for new things
-as well as figuring things out!
+Hey! My name is KeyoMeyo, and I'm a Math major at UAlberta; this is a repository for basic things (for reviewing and figuring things out).
 
-Any changes need to be verified by moi (this is a public <b> personal </b> repository after all!)
+Any changes need to be verified by moi (this is a public <b> personal </b> repository).
 
-If you wanna see a more open-for-collab repository of mine, it'll be coming soon!
+If you wanna see a more open-for-collab repository of mine, it'll called <i>'Interesting Projects'</i>
 
--KeyoMeyo, 16 feb. 2018
+-KeyoMeyo
