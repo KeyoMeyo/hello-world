@@ -1,0 +1,71 @@
+/**
+ * Copyright (c) 2016 Razeware LLC
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+import Foundation
+import QuartzCore
+import Metal
+
+class Node {
+  
+  let device: MTLDevice
+  let name: String
+  var vertexCount: Int
+  var vertexBuffer: MTLBuffer
+  
+  init(name: String, vertices: Array<Vertex>, device: MTLDevice){
+    // 1
+    var vertexData = Array<Float>()
+    for vertex in vertices{
+      vertexData += vertex.floatBuffer()
+    }
+    
+    // 2
+    let dataSize = vertexData.count * MemoryLayout.size(ofValue: vertexData[0])
+    vertexBuffer = device.makeBuffer(bytes: vertexData, length: dataSize, options: [])!
+    
+    // 3
+    self.name = name
+    self.device = device
+    vertexCount = vertices.count
+  }
+  
+  func render(commandQueue: MTLCommandQueue, pipelineState: MTLRenderPipelineState, drawable: CAMetalDrawable, clearColor: MTLClearColor?){
+    
+    let renderPassDescriptor = MTLRenderPassDescriptor()
+    renderPassDescriptor.colorAttachments[0].texture = drawable.texture
+    renderPassDescriptor.colorAttachments[0].loadAction = .clear
+    renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0.0, green: 104.0/255.0, blue: 5.0/255.0, alpha: 1.0)
+    renderPassDescriptor.colorAttachments[0].storeAction = .store
+    
+    let commandBuffer = commandQueue.makeCommandBuffer()
+    
+    let renderEncoder = commandBuffer?.makeRenderCommandEncoder(descriptor: renderPassDescriptor)
+    renderEncoder?.setRenderPipelineState(pipelineState)
+    renderEncoder?.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
+    renderEncoder?.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: vertexCount, instanceCount: vertexCount/3)
+    renderEncoder?.endEncoding()
+    
+    commandBuffer?.present(drawable)
+    commandBuffer?.commit()
+  }
+  
+}
