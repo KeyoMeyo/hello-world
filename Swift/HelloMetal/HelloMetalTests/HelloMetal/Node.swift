@@ -30,6 +30,18 @@ class Node {
   let name: String
   var vertexCount: Int
   var vertexBuffer: MTLBuffer
+
+    var positionX: Float = 0.0
+    var positionY: Float = 0.0
+    var positionZ: Float = 0.0
+    
+    var rotationX: Float = 0.0
+    var rotationY: Float = 0.0
+    var rotationZ: Float = 0.0
+    var scale: Float     = 1.0
+    
+    var time:CFTimeInterval = 0.0
+
   
   init(name: String, vertices: Array<Vertex>, device: MTLDevice){
     // 1
@@ -48,7 +60,7 @@ class Node {
     vertexCount = vertices.count
   }
   
-  func render(commandQueue: MTLCommandQueue, pipelineState: MTLRenderPipelineState, drawable: CAMetalDrawable, clearColor: MTLClearColor?){
+  func render(commandQueue: MTLCommandQueue, pipelineState: MTLRenderPipelineState, drawable: CAMetalDrawable, parentModelViewMatrix: Matrix4, projectionMatrix: Matrix4, clearColor: MTLClearColor?) {
     
     let renderPassDescriptor = MTLRenderPassDescriptor()
     renderPassDescriptor.colorAttachments[0].texture = drawable.texture
@@ -59,13 +71,40 @@ class Node {
     let commandBuffer = commandQueue.makeCommandBuffer()
     
     let renderEncoder = commandBuffer?.makeRenderCommandEncoder(descriptor: renderPassDescriptor)
+    //For now cull mode is used instead of depth buffer
+    renderEncoder?.setCullMode(MTLCullMode.front)
     renderEncoder?.setRenderPipelineState(pipelineState)
     renderEncoder?.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
+    // 1
+    let nodeModelMatrix = self.modelMatrix()
+    nodeModelMatrix.multiplyLeft(parentModelViewMatrix)
+    // 2
+    let uniformBuffer = device.makeBuffer(length: MemoryLayout<Float>.size * Matrix4.numberOfElements() * 2, options: [])
+    
+    // 3
+    let bufferPointer = uniformBuffer!.contents()
+    // 4
+    memcpy(bufferPointer, nodeModelMatrix.raw(), MemoryLayout<Float>.size * Matrix4.numberOfElements())
+    memcpy(bufferPointer + MemoryLayout<Float>.size * Matrix4.numberOfElements(), projectionMatrix.raw(), MemoryLayout<Float>.size * Matrix4.numberOfElements())
+    // 5
+    renderEncoder?.setVertexBuffer(uniformBuffer, offset: 0, index: 1)
     renderEncoder?.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: vertexCount, instanceCount: vertexCount/3)
     renderEncoder?.endEncoding()
     
     commandBuffer?.present(drawable)
     commandBuffer?.commit()
   }
+    
+    func modelMatrix() -> Matrix4 {
+        let matrix = Matrix4()
+        matrix.translate(positionX, y: positionY, z: positionZ)
+        matrix.rotateAroundX(rotationX, y: rotationY, z: rotationZ)
+        matrix.scale(scale, y: scale, z: scale)
+        return matrix
+    }
   
+    func updateWithDelta(delta: CFTimeInterval){
+        time += delta
+    }
+    
 }
